@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kiebitz – Verfügbarkeit August 2027</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f5f5f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 2rem;
+    }
+
+    /* Status banner */
+    .banner {
+      width: 100%;
+      max-width: 480px;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 1.75rem;
+      transition: background 0.3s;
+    }
+    .banner.unavailable { background: #fde8e8; color: #b91c1c; border: 1.5px solid #fca5a5; }
+    .banner.available   { background: #dcfce7; color: #15803d; border: 1.5px solid #86efac; }
+    .banner.loading     { background: #f1f5f9; color: #64748b; border: 1.5px solid #cbd5e1; }
+
+    /* Calendar */
+    .calendar {
+      width: 100%;
+      max-width: 480px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .cal-header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0;
+    }
+
+    .cal-weekday {
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #888;
+      padding: 0.5rem 0;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .cal-day {
+      text-align: center;
+      padding: 0.6rem 0.2rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: default;
+      border-bottom: 1px solid #f7f7f7;
+      border-right: 1px solid #f7f7f7;
+      transition: opacity 0.2s;
+    }
+
+    .cal-day.empty   { background: #fafafa; }
+    .cal-day.unavailable {
+      background: #fef2f2;
+      color: #ef4444;
+    }
+    .cal-day.available {
+      background: #f0fdf4;
+      color: #16a34a;
+      font-weight: 700;
+    }
+    .cal-day.loading { background: #f8f8f8; color: #ccc; }
+
+    /* Run log */
+    .run-log {
+      width: 100%;
+      max-width: 480px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .run-log-header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 0.6rem 1rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .run-log-body {
+      padding: 0.75rem 1rem;
+    }
+
+    .run-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.82rem;
+    }
+    .run-row:last-child { border-bottom: none; }
+    .run-row .label { color: #666; }
+    .run-row .value { font-weight: 500; font-variant-numeric: tabular-nums; }
+    .run-row .value.ok  { color: #16a34a; }
+    .run-row .value.err { color: #ef4444; }
+
+    /* Footer */
+    footer {
+      font-size: 0.75rem;
+      color: #999;
+      text-align: center;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .dot.green { background: #16a34a; }
+    .dot.red   { background: #ef4444; }
+  </style>
+</head>
+<body>
+  <h1>Arche Svea · Kiebitz</h1>
+  <p class="subtitle">Spiekeroog · August 2027</p>
+
+  <div class="banner loading" id="banner">Lade…</div>
+
+  <div class="calendar">
+    <div class="cal-header">August 2027</div>
+    <div class="cal-grid" id="cal-grid">
+      <!-- weekday headers -->
+      <div class="cal-weekday">Mo</div>
+      <div class="cal-weekday">Di</div>
+      <div class="cal-weekday">Mi</div>
+      <div class="cal-weekday">Do</div>
+      <div class="cal-weekday">Fr</div>
+      <div class="cal-weekday">Sa</div>
+      <div class="cal-weekday">So</div>
+      <!-- days filled by JS -->
+    </div>
+  </div>
+
+  <div class="run-log">
+    <div class="run-log-header">Status</div>
+    <div class="run-log-body" id="run-log-body">
+      <div class="run-row"><span class="label">Letzter Check</span><span class="value" id="last-check">–</span></div>
+      <div class="run-row"><span class="label">Nächster Check (ca.)</span><span class="value" id="next-check">–</span></div>
+      <div class="run-row"><span class="label">Freie Tage</span><span class="value" id="free-count">–</span></div>
+      <div class="run-row"><span class="label">Seite aktualisiert</span><span class="value" id="page-refresh">alle 5 min</span></div>
+    </div>
+  </div>
+
+  <footer>
+    <a href="https://www.inselzeit.de/Deutschland/Nordsee/Ostfriesische.Inseln/Spiekeroog/Kiebitz"
+       target="_blank" rel="noopener">Direkt zur Buchungsseite</a>
+  </footer>
+
+  <script>
+    const CHECK_INTERVAL_MS = 15 * 60 * 1000; // 15 min (mirrors timer)
+    const PAGE_REFRESH_MS   =  5 * 60 * 1000; // 5 min
+
+    function fmt(isoStr) {
+      if (!isoStr) return '–';
+      const d = new Date(isoStr);
+      return d.toLocaleString('de-DE', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+    }
+
+    function renderCalendar(days) {
+      const grid = document.getElementById('cal-grid');
+      // Remove any previously injected day cells (keep the 7 weekday headers)
+      const headers = Array.from(grid.querySelectorAll('.cal-weekday'));
+      grid.innerHTML = '';
+      headers.forEach(h => grid.appendChild(h));
+
+      if (!days || days.length === 0) {
+        const el = document.createElement('div');
+        el.className = 'cal-day loading';
+        el.style.gridColumn = '1 / -1';
+        el.textContent = 'Keine Daten';
+        grid.appendChild(el);
+        return;
+      }
+
+      // Aug 2027 starts on Sunday (index 6 in Mon-first grid)
+      const firstDow = new Date('2027-08-01T00:00:00Z').getUTCDay(); // 0=Sun
+      const offset = firstDow === 0 ? 6 : firstDow - 1; // Mon-first offset
+      for (let i = 0; i < offset; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'cal-day empty';
+        grid.appendChild(empty);
+      }
+
+      days.forEach(({ date, available }) => {
+        const dayNum = parseInt(date.slice(8), 10);
+        const el = document.createElement('div');
+        el.className = 'cal-day ' + (available ? 'available' : 'unavailable');
+        el.title = date + ': ' + (available ? 'frei' : 'belegt');
+        el.textContent = dayNum;
+        grid.appendChild(el);
+      });
+    }
+
+    async function load() {
+      try {
+        const resp = await fetch('status.json?_=' + Date.now());
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+
+        const banner = document.getElementById('banner');
+        if (data.any_available) {
+          banner.className = 'banner available';
+          banner.innerHTML = '<span class="dot green"></span>Verfügbar! Freie Tage im August 2027.';
+        } else {
+          banner.className = 'banner unavailable';
+          banner.innerHTML = '<span class="dot red"></span>Nicht verfügbar – August 2027 ist voll belegt.';
+        }
+
+        renderCalendar(data.days);
+
+        document.getElementById('last-check').textContent = fmt(data.checked_at);
+
+        const nextMs = new Date(data.checked_at).getTime() + CHECK_INTERVAL_MS;
+        document.getElementById('next-check').textContent = fmt(new Date(nextMs).toISOString());
+
+        const freeCount = (data.days || []).filter(d => d.available).length;
+        const freeEl = document.getElementById('free-count');
+        freeEl.textContent = freeCount + ' Tag' + (freeCount !== 1 ? 'e' : '');
+        freeEl.className = 'value ' + (freeCount > 0 ? 'ok' : 'err');
+
+      } catch (e) {
+        document.getElementById('banner').className = 'banner loading';
+        document.getElementById('banner').textContent = 'Fehler beim Laden: ' + e.message;
+      }
+    }
+
+    load();
+    setInterval(load, PAGE_REFRESH_MS);
+  </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+[Unit]
+Description=Kibitz availability checker (Arche Svea Kiebitz, Spiekeroog, Aug 2027)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/kibitz-checker
+ExecStart=/usr/bin/node /opt/kibitz-checker/node_modules/.bin/tsx /opt/kibitz-checker/checker.ts
+StateDirectory=kibitz-checker
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/kibitz-checker /opt/kibitz-checker/www
+PrivateTmp=true

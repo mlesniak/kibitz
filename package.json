@@ -1,0 +1,12 @@
+{
+  "name": "kibitz-checker",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "check": "tsx checker.ts",
+    "check:dry": "tsx checker.ts --dry-run"
+  },
+  "dependencies": {
+    "tsx": "^4.19.2"
+  }
+}
