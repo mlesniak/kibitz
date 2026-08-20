@@ -38,6 +38,7 @@ const STATE_PATH = "/var/lib/kibitz-checker/state.json";
 const STATUS_PATH = path.join(__dirname, "www", "status.json");
 
 const DRY_RUN = process.argv.includes("--dry-run");
+const SMOKE_TEST = process.argv.includes("--smoke-test");
 const FAILURE_THRESHOLD = 3;
 
 // ---------------------------------------------------------------------------
@@ -168,13 +169,24 @@ async function fetchCalendar(token: string): Promise<CalResponse["cal"]> {
 
 async function main() {
   if (DRY_RUN) log("--- DRY RUN MODE ---");
+  if (SMOKE_TEST) log("--- SMOKE TEST MODE: forcing availability, will send real ntfy push ---");
 
   const state = loadState();
 
   let days: DayStatus[];
   let anyAvailable: boolean;
 
-  try {
+  if (SMOKE_TEST) {
+    // Bypass the API entirely — inject a fake available day to exercise
+    // the full notification path end-to-end.
+    days = [{ date: "2027-08-15", available: true }];
+    anyAvailable = true;
+    // Reset notified so the push always fires during a smoke test.
+    state.notified = false;
+    state.consecutive_failures = 0;
+    state.failure_notified = false;
+    log("Smoke test: injected available day 2027-08-15");
+  } else try {
     log("Fetching token from inselzeit.de...");
     const token = await fetchToken();
     log("Fetching calendar from v-office API...");
