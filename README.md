@@ -16,7 +16,7 @@ api2.v-office.com/api/json/getCal
 checker.ts  ──── /var/lib/kibitz-checker/state.json   (was_available, notified, failure counters)
         |
         ├── www/status.json    (read by frontend)
-        └── ntfy.sh topic: madeleine-kibitz   (on false→true transition)
+        └── ntfy.sh topic: madeleine-spiekeroog   (on false→true transition)
 
 kibitz.mlesniak.com  ←  Caddy file_server  ←  /opt/kibitz-checker/www/
 ```
@@ -90,6 +90,6 @@ All constants are at the top of `checker.ts`:
 | `UNIT_PAGE_URL` | inselzeit.de Kiebitz page |
 | `UNIT_ID` | 176608 |
 | `CHECK_MONTH` | August 2027 |
-| `NTFY_TOPIC` | `madeleine-kibitz` |
+| `NTFY_TOPIC` | `madeleine-spiekeroog` |
 | `FAILURE_THRESHOLD` | 3 consecutive failures before warning push |
 | Timer interval | 15 min (`OnUnitActiveSec` in `.timer`) |
