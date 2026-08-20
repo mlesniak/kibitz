@@ -30,8 +30,8 @@ const UNIT_PAGE_URL =
 const UNIT_ID = 176608;
 const VOFFICE_API = "https://api2.v-office.com/api/json/getCal";
 const NTFY_SERVER = "https://ntfy.sh";
-const NTFY_TOPIC = "madeleine-spiekeroog";
-const NTFY_WARN_TOPIC = "madeleine-spiekeroog"; // warnings go to same topic
+const NTFY_TOPIC = "madeleine-spikeroog";
+const NTFY_WARN_TOPIC = "madeleine-spikeroog"; // warnings go to same topic
 const CHECK_MONTH = { year: 2027, month: 8 }; // August 2027
 
 const STATE_PATH = "/var/lib/kibitz-checker/state.json";
