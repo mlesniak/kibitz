@@ -193,18 +193,41 @@
     .history-body { padding: 0.5rem 1rem; }
 
     .history-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.35rem 0;
+      padding: 0.4rem 0;
       border-bottom: 1px solid #f0f0f0;
       font-size: 0.8rem;
     }
     .history-row:last-child { border-bottom: none; }
+    .history-row .history-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
     .history-row .ts { color: #666; font-variant-numeric: tabular-nums; }
     .history-row .outcome { font-weight: 500; }
     .history-row .outcome.ok  { color: #16a34a; }
     .history-row .outcome.err { color: #ef4444; }
+    .history-row .history-meta {
+      margin-top: 0.15rem;
+      font-size: 0.72rem;
+      color: #999;
+      font-variant-numeric: tabular-nums;
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .history-row .history-meta .badge {
+      color: #1a1a2e;
+      background: #eef0f7;
+      border-radius: 4px;
+      padding: 0.05rem 0.35rem;
+    }
+    .history-row .history-error {
+      margin-top: 0.2rem;
+      font-size: 0.72rem;
+      color: #b91c1c;
+      word-break: break-word;
+    }
     .history-empty { font-size: 0.8rem; color: #999; padding: 0.5rem 0; }
 
     /* Footer */
@@ -327,6 +350,12 @@
       });
     }
 
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
     function renderHistory(runs) {
       const body = document.getElementById('history-body');
       if (!runs || runs.length === 0) {
@@ -338,10 +367,23 @@
         const outcome = ok
           ? (r.any_available ? (r.free_count + ' frei') : 'belegt')
           : 'Fehler';
-        const title = !ok && r.error ? ' title="' + r.error.replace(/"/g, '&quot;') + '"' : '';
-        return '<div class="history-row"' + title + '>' +
-          '<span class="ts">' + fmt(r.checked_at) + '</span>' +
-          '<span class="outcome ' + (ok ? 'ok' : 'err') + '">' + outcome + '</span>' +
+
+        const meta = [];
+        if (typeof r.duration_ms === 'number') meta.push('<span>' + r.duration_ms + ' ms</span>');
+        if (r.notified) meta.push('<span class="badge">Push gesendet</span>');
+        if (!ok && r.consecutive_failures) meta.push('<span>' + r.consecutive_failures + 'x in Folge</span>');
+
+        const errorLine = !ok && r.error
+          ? '<div class="history-error">' + esc(r.error) + '</div>'
+          : '';
+
+        return '<div class="history-row">' +
+          '<div class="history-main">' +
+            '<span class="ts">' + fmt(r.checked_at) + '</span>' +
+            '<span class="outcome ' + (ok ? 'ok' : 'err') + '">' + outcome + '</span>' +
+          '</div>' +
+          (meta.length ? '<div class="history-meta">' + meta.join('') + '</div>' : '') +
+          errorLine +
           '</div>';
       }).join('');
     }

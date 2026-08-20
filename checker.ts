@@ -58,6 +58,9 @@ interface RunRecord {
   success: boolean;
   any_available: boolean;
   free_count: number;
+  duration_ms: number;
+  notified: boolean;
+  consecutive_failures: number;
   error?: string;
 }
 
@@ -202,6 +205,7 @@ async function main() {
 
   const state = loadState();
   const prevStatus = loadStatus();
+  const runStart = Date.now();
 
   let days: DayStatus[];
   let anyAvailable: boolean;
@@ -240,6 +244,7 @@ async function main() {
     state.consecutive_failures += 1;
     log(`Consecutive failures: ${state.consecutive_failures}`);
 
+    let warnNotified = false;
     if (
       state.consecutive_failures >= FAILURE_THRESHOLD &&
       !state.failure_notified
@@ -252,6 +257,7 @@ async function main() {
         tags: ["warning"],
       });
       state.failure_notified = true;
+      warnNotified = true;
     }
 
     writeStatus({
@@ -261,6 +267,9 @@ async function main() {
         success: false,
         any_available: prevStatus.any_available,
         free_count: prevStatus.days.filter((d) => d.available).length,
+        duration_ms: Date.now() - runStart,
+        notified: warnNotified,
+        consecutive_failures: state.consecutive_failures,
         error: (err as Error).message,
       }),
     });
@@ -269,20 +278,10 @@ async function main() {
     process.exit(1);
   }
 
-  // Write frontend status
-  writeStatus({
-    checked_at: new Date().toISOString(),
-    any_available: anyAvailable,
-    days,
-    runs: pushRun(prevStatus.runs, {
-      checked_at: new Date().toISOString(),
-      success: true,
-      any_available: anyAvailable,
-      free_count: days.filter((d) => d.available).length,
-    }),
-  });
+  const durationMs = Date.now() - runStart;
 
   // Notification logic: fire exactly once on first false→true transition
+  let notifiedThisRun = false;
   if (anyAvailable && !state.notified) {
     const availDays = days.filter((d) => d.available).map((d) => d.date);
     log("Transition detected: sending ntfy push...");
@@ -300,11 +299,28 @@ async function main() {
       priority: 5,
     });
     state.notified = true;
+    notifiedThisRun = true;
   } else if (!anyAvailable && state.notified) {
     // Dates became unavailable again — reset so we notify on the next opening.
     log("Was notified before but now unavailable again — resetting notified flag.");
     state.notified = false;
   }
+
+  // Write frontend status
+  writeStatus({
+    checked_at: new Date().toISOString(),
+    any_available: anyAvailable,
+    days,
+    runs: pushRun(prevStatus.runs, {
+      checked_at: new Date().toISOString(),
+      success: true,
+      any_available: anyAvailable,
+      free_count: days.filter((d) => d.available).length,
+      duration_ms: durationMs,
+      notified: notifiedThisRun,
+      consecutive_failures: state.consecutive_failures,
+    }),
+  });
 
   state.was_available = anyAvailable;
   saveState(state);
