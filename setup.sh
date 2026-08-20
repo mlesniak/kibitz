@@ -28,7 +28,8 @@ if [[ ! -f "$INSTALL_DIR/www/status.json" ]]; then
 {
   "checked_at": null,
   "any_available": false,
-  "days": []
+  "days": [],
+  "runs": []
 }
 JSON
 fi

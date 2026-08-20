@@ -53,11 +53,22 @@ interface CalResponse {
   };
 }
 
-interface StatusJson {
+interface RunRecord {
   checked_at: string;
+  success: boolean;
+  any_available: boolean;
+  free_count: number;
+  error?: string;
+}
+
+interface StatusJson {
+  checked_at: string | null;
   any_available: boolean;
   days: DayStatus[];
+  runs: RunRecord[];
 }
+
+const MAX_RUN_HISTORY = 10;
 
 interface State {
   was_available: boolean;
@@ -97,6 +108,24 @@ function saveState(state: State) {
   const tmp = STATE_PATH + ".tmp";
   fs.writeFileSync(tmp, JSON.stringify(state, null, 2), "utf8");
   fs.renameSync(tmp, STATE_PATH);
+}
+
+function loadStatus(): StatusJson {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(STATUS_PATH, "utf8")) as Partial<StatusJson>;
+    return {
+      checked_at: parsed.checked_at ?? null,
+      any_available: parsed.any_available ?? false,
+      days: parsed.days ?? [],
+      runs: parsed.runs ?? [],
+    };
+  } catch {
+    return { checked_at: null, any_available: false, days: [], runs: [] };
+  }
+}
+
+function pushRun(runs: RunRecord[], run: RunRecord): RunRecord[] {
+  return [run, ...runs].slice(0, MAX_RUN_HISTORY);
 }
 
 function writeStatus(status: StatusJson) {
@@ -172,6 +201,7 @@ async function main() {
   if (SMOKE_TEST) log("--- SMOKE TEST MODE: forcing availability, will send real ntfy push ---");
 
   const state = loadState();
+  const prevStatus = loadStatus();
 
   let days: DayStatus[];
   let anyAvailable: boolean;
@@ -224,6 +254,17 @@ async function main() {
       state.failure_notified = true;
     }
 
+    writeStatus({
+      ...prevStatus,
+      runs: pushRun(prevStatus.runs, {
+        checked_at: new Date().toISOString(),
+        success: false,
+        any_available: prevStatus.any_available,
+        free_count: prevStatus.days.filter((d) => d.available).length,
+        error: (err as Error).message,
+      }),
+    });
+
     saveState(state);
     process.exit(1);
   }
@@ -233,6 +274,12 @@ async function main() {
     checked_at: new Date().toISOString(),
     any_available: anyAvailable,
     days,
+    runs: pushRun(prevStatus.runs, {
+      checked_at: new Date().toISOString(),
+      success: true,
+      any_available: anyAvailable,
+      free_count: days.filter((d) => d.available).length,
+    }),
   });
 
   // Notification logic: fire exactly once on first false→true transition

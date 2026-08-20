@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kiebitz – Verfügbarkeit August 2027</title>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a1a2e">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kiebitz">
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -147,6 +157,56 @@
     .run-row .value.ok  { color: #16a34a; }
     .run-row .value.err { color: #ef4444; }
 
+    /* Run history (collapsible) */
+    .history {
+      width: 100%;
+      max-width: 480px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .history summary {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 0.6rem 1rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history summary::-webkit-details-marker { display: none; }
+    .history summary::after {
+      content: '▾';
+      font-size: 0.8rem;
+      transition: transform 0.2s;
+    }
+    .history[open] summary::after { transform: rotate(180deg); }
+
+    .history-body { padding: 0.5rem 1rem; }
+
+    .history-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.8rem;
+    }
+    .history-row:last-child { border-bottom: none; }
+    .history-row .ts { color: #666; font-variant-numeric: tabular-nums; }
+    .history-row .outcome { font-weight: 500; }
+    .history-row .outcome.ok  { color: #16a34a; }
+    .history-row .outcome.err { color: #ef4444; }
+    .history-empty { font-size: 0.8rem; color: #999; padding: 0.5rem 0; }
+
     /* Footer */
     footer {
       font-size: 0.75rem;
@@ -194,6 +254,13 @@
       <div class="run-row"><span class="label">Freie Tage</span><span class="value" id="free-count">–</span></div>
     </div>
   </div>
+
+  <details class="history">
+    <summary>Verlauf (letzte 10 Läufe)</summary>
+    <div class="history-body" id="history-body">
+      <div class="history-empty">Keine Daten</div>
+    </div>
+  </details>
 
   <div class="run-log" style="margin-bottom:1.5rem">
     <div class="run-log-header">Test</div>
@@ -260,6 +327,25 @@
       });
     }
 
+    function renderHistory(runs) {
+      const body = document.getElementById('history-body');
+      if (!runs || runs.length === 0) {
+        body.innerHTML = '<div class="history-empty">Keine Daten</div>';
+        return;
+      }
+      body.innerHTML = runs.map((r) => {
+        const ok = r.success;
+        const outcome = ok
+          ? (r.any_available ? (r.free_count + ' frei') : 'belegt')
+          : 'Fehler';
+        const title = !ok && r.error ? ' title="' + r.error.replace(/"/g, '&quot;') + '"' : '';
+        return '<div class="history-row"' + title + '>' +
+          '<span class="ts">' + fmt(r.checked_at) + '</span>' +
+          '<span class="outcome ' + (ok ? 'ok' : 'err') + '">' + outcome + '</span>' +
+          '</div>';
+      }).join('');
+    }
+
     async function load() {
       try {
         const resp = await fetch('status.json?_=' + Date.now());
@@ -276,6 +362,7 @@
         }
 
         renderCalendar(data.days);
+        renderHistory(data.runs);
 
         document.getElementById('last-check').textContent = fmt(data.checked_at);
 
@@ -328,6 +415,12 @@
 
     load();
     setInterval(load, PAGE_REFRESH_MS);
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW registration failed', e));
+      });
+    }
   </script>
 </body>
 </html>

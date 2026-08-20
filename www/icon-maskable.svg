@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22243f"/>
+      <stop offset="1" stop-color="#14152a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- background, full bleed for maskable safe-zone masking -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+
+  <!-- artwork scaled to fit the ~80% safe-zone circle Android masks apply -->
+  <g transform="translate(256,256) scale(0.74) translate(-256,-256)">
+    <!-- sea waves -->
+    <path d="M 60 372 Q 116 350 172 372 T 284 372 T 396 372 T 452 372"
+          fill="none" stroke="#3d8f9e" stroke-width="14" stroke-linecap="round" opacity="0.9"/>
+    <path d="M 60 404 Q 116 386 172 404 T 284 404 T 396 404 T 452 404"
+          fill="none" stroke="#2a6b78" stroke-width="12" stroke-linecap="round" opacity="0.7"/>
+
+    <!-- kiebitz (lapwing) silhouette, wings raised -->
+    <g fill="#f5f5f0">
+      <!-- crest -->
+      <path d="M 253 118 Q 262 96 250 82 Q 268 90 270 116 Z"/>
+      <!-- body -->
+      <ellipse cx="256" cy="188" rx="34" ry="46"/>
+      <!-- head -->
+      <circle cx="256" cy="140" r="24"/>
+      <!-- beak -->
+      <path d="M 232 138 L 208 132 L 232 148 Z"/>
+      <!-- left wing, swept up -->
+      <path d="M 224 178
+               C 150 158, 96 96, 66 66
+               C 92 150, 118 176, 158 206
+               C 182 224, 206 220, 224 206 Z"/>
+      <!-- right wing, swept up -->
+      <path d="M 288 178
+               C 362 158, 416 96, 446 66
+               C 420 150, 394 176, 354 206
+               C 330 224, 306 220, 288 206 Z"/>
+      <!-- tail -->
+      <path d="M 240 224 L 256 268 L 272 224 Z"/>
+    </g>
+
+    <!-- eye -->
+    <circle cx="248" cy="136" r="4" fill="#14152a"/>
+  </g>
+</svg>

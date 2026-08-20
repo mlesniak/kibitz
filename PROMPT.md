@@ -31,8 +31,11 @@ Local: `/home/m/kibitz/`
 | `checker.ts` | Main runner: scrapes token, calls API, writes status.json, fires ntfy |
 | `lib.ts` | Pure logic: `sliceMonth()` — maps raw availability array to per-day statuses |
 | `checker.test.ts` | 8 unit tests for `sliceMonth` (Node built-in test runner) |
-| `www/index.html` | Static frontend: calendar grid, status panel, test button |
+| `www/index.html` | Static frontend: calendar grid, status panel, collapsible run history, test button |
 | `www/status.json` | Written by checker each run; read by frontend (excluded from rsync) |
+| `www/manifest.json` | PWA manifest — installable on Android home screen (Kiebitz icon) |
+| `www/sw.js` | Minimal service worker (app-shell cache; status.json always network) |
+| `www/icon.svg`, `icon-maskable.svg`, `icons/*.png` | Kiebitz (lapwing) app icon, source SVG + generated PNGs |
 | `systemd/kibitz-checker.service` | oneshot service |
 | `systemd/kibitz-checker.timer` | 15-min periodic trigger |
 | `deploy.sh` | rsync to server + run `setup.sh` |
@@ -55,6 +58,21 @@ Local: `/home/m/kibitz/`
 - If availability disappears again, `notified` resets → fires again on next opening
 - Fetch failures ≥ 3 consecutive → warning push to same topic (once per streak)
 - State fields: `was_available`, `notified`, `consecutive_failures`, `failure_notified`
+
+## Frontend extras
+
+- **PWA / Android install**: `www/manifest.json` + `www/sw.js` + `www/icons/`
+  make the site installable to the Android home screen (Chrome "Add to Home
+  screen" / install prompt). Icon is a lapwing (Kiebitz) over sea waves,
+  navy background, generated from `www/icon.svg` via ImageMagick
+  (`convert -background none icon.svg -resize <N>x<N> icons/icon-<N>.png`).
+  Regenerate PNGs after editing the SVGs.
+- **Run history**: `status.json.runs` holds the last 10 run records
+  (`checked_at`, `success`, `any_available`, `free_count`, `error?`),
+  newest first, written by `checker.ts` on every run (success and
+  failure). Not durably persisted across process restarts by design —
+  it's just for at-a-glance sanity checking in the collapsible
+  "Verlauf" panel on the frontend.
 
 ## Commands
 
