@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "check": "tsx checker.ts",
-    "check:dry": "tsx checker.ts --dry-run"
+    "check:dry": "tsx checker.ts --dry-run",
+    "test": "tsx --test checker.test.ts"
   },
   "dependencies": {
     "tsx": "^4.19.2"

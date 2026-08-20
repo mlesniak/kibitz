@@ -17,6 +17,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { sliceMonth, type CalData, type DayStatus } from "./lib.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -45,21 +46,14 @@ const FAILURE_THRESHOLD = 3;
 
 interface CalResponse {
   ok?: boolean;
-  cal: {
-    availability: string[];       // "Y" | "N" | "Q" per day from availabilityUpdate
-    availabilityUpdate: string;   // ISO datetime, e.g. "2026-08-17T11:45:42Z"
+  cal: CalData & {
     changeOver: string[];
     minStay: number[];
   };
 }
 
-interface DayStatus {
-  date: string;   // YYYY-MM-DD
-  available: boolean;
-}
-
 interface StatusJson {
-  checked_at: string;   // ISO datetime
+  checked_at: string;
   any_available: boolean;
   days: DayStatus[];
 }
@@ -168,34 +162,6 @@ async function fetchCalendar(token: string): Promise<CalResponse["cal"]> {
   return json.cal;
 }
 
-function sliceMonth(
-  cal: CalResponse["cal"],
-  year: number,
-  month: number
-): DayStatus[] {
-  // The availability array starts at midnight of the availabilityUpdate date (UTC).
-  const baseDate = new Date(cal.availabilityUpdate.split("T")[0] + "T00:00:00Z");
-
-  // Days in the target month
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-
-  const result: DayStatus[] = [];
-  for (let day = 1; day <= daysInMonth; day++) {
-    const target = new Date(Date.UTC(year, month - 1, day));
-    const idx = Math.round(
-      (target.getTime() - baseDate.getTime()) / 86_400_000
-    );
-    const code = idx >= 0 && idx < cal.availability.length
-      ? cal.availability[idx]
-      : "N";
-    result.push({
-      date: target.toISOString().slice(0, 10),
-      available: code === "Y",
-    });
-  }
-  return result;
-}
-
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -221,13 +187,12 @@ async function main() {
     const availableDays = days.filter((d) => d.available).map((d) => d.date);
     log(
       `August 2027: any_available=${anyAvailable}` +
-        (availableDays.length ? ` (${availableDays.join(", ")})` : "")
+        (availableDays.length ? ` (${availableDays.join(", ")})` : ""),
     );
 
     // Reset failure state on success
     state.consecutive_failures = 0;
     state.failure_notified = false;
-
   } catch (err) {
     log(`ERROR: ${(err as Error).message}`);
     state.consecutive_failures += 1;
@@ -277,8 +242,7 @@ async function main() {
     });
     state.notified = true;
   } else if (!anyAvailable && state.notified) {
-    // Dates became unavailable again (e.g. booking cancelled then re-blocked)
-    // Reset so we notify again if it opens back up.
+    // Dates became unavailable again — reset so we notify on the next opening.
     log("Was notified before but now unavailable again — resetting notified flag.");
     state.notified = false;
   }
