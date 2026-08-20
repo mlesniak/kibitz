@@ -196,6 +196,17 @@
     </div>
   </div>
 
+  <div class="run-log" style="margin-bottom:1.5rem">
+    <div class="run-log-header">Test</div>
+    <div class="run-log-body">
+      <div class="run-row" style="gap:0.5rem;flex-wrap:wrap">
+        <input id="test-msg" type="text" value="Kibitz-Test: alles ok!" style="flex:1;min-width:0;padding:0.35rem 0.5rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.82rem;font-family:inherit">
+        <button id="test-btn" onclick="sendTest()" style="padding:0.35rem 0.85rem;background:#1a1a2e;color:#fff;border:none;border-radius:6px;font-size:0.82rem;cursor:pointer;white-space:nowrap">Testnachricht senden</button>
+      </div>
+      <div id="test-result" style="font-size:0.78rem;margin-top:0.4rem;min-height:1.1em"></div>
+    </div>
+  </div>
+
   <footer>
     <a href="https://www.inselzeit.de/Deutschland/Nordsee/Ostfriesische.Inseln/Spiekeroog/Kiebitz"
        target="_blank" rel="noopener">Direkt zur Buchungsseite</a>
@@ -279,6 +290,39 @@
       } catch (e) {
         document.getElementById('banner').className = 'banner loading';
         document.getElementById('banner').textContent = 'Fehler beim Laden: ' + e.message;
+      }
+    }
+
+
+    async function sendTest() {
+      const btn = document.getElementById('test-btn');
+      const msg = document.getElementById('test-msg').value.trim();
+      const result = document.getElementById('test-result');
+      if (!msg) { result.style.color = '#ef4444'; result.textContent = 'Bitte eine Nachricht eingeben.'; return; }
+      btn.disabled = true;
+      btn.textContent = 'Sende…';
+      result.style.color = '#64748b';
+      result.textContent = '';
+      try {
+        const resp = await fetch('https://ntfy.sh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: 'madeleine-kibitz',
+            title: 'Kibitz Test',
+            message: msg,
+            tags: ['bell'],
+          }),
+        });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        result.style.color = '#16a34a';
+        result.textContent = 'Gesendet!';
+      } catch (e) {
+        result.style.color = '#ef4444';
+        result.textContent = 'Fehler: ' + e.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Testnachricht senden';
       }
     }
 
