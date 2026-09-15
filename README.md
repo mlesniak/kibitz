@@ -65,6 +65,43 @@ journalctl -u kibitz-checker.service -f
 systemctl list-timers kibitz-checker.timer
 ```
 
+### Deactivating / re-enabling
+
+> **Note:** as of 2026-09-15 the app is deactivated (see below) — the
+> timer is stopped/disabled and the site is unreachable, but nothing was
+> deleted.
+
+To fully shut the app down (stop checking, take the frontend offline,
+without deleting any data):
+
+```sh
+ssh root@mlesniak.com
+
+# stop + disable the checker
+systemctl stop kibitz-checker.timer kibitz-checker.service
+systemctl disable kibitz-checker.timer
+
+# unroute the frontend (move aside, don't delete)
+mv /etc/caddy/Caddyfile.d/kibitz.caddyfile /etc/caddy/Caddyfile.d/kibitz.caddyfile.disabled
+systemctl reload caddy
+```
+
+To re-enable it again:
+
+```sh
+ssh root@mlesniak.com
+
+# re-route the frontend
+mv /etc/caddy/Caddyfile.d/kibitz.caddyfile.disabled /etc/caddy/Caddyfile.d/kibitz.caddyfile
+systemctl reload caddy
+
+# restart + re-enable the checker
+systemctl enable --now kibitz-checker.timer
+```
+
+Verify with `systemctl is-active kibitz-checker.timer` and
+`curl -I https://kibitz.mlesniak.com`.
+
 ## File layout
 
 ```
